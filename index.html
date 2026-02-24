@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lumina Coffee | Premium Roasters</title>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- TMA Solution Web Personalization SDK Injection -->
+    <script type="module">
+        var options = {
+            scope: "tma-workspace-demo",
+            url: {
+                api: "https://revamp-unomi.techgadgetforus.com/cxs",
+                script: "https://revamp-api.techgadgetforus.com"
+            },
+            source: { id: "coffee-shop-demo" },
+            initialPageProperties: {
+                path: location.pathname + location.hash,
+                pageInfo: {
+                    pageID: "index",
+                    pageName: document.title,
+                    pagePath: document.location.pathname,
+                    destinationURL: document.location.origin + document.location.pathname,
+                    language: "en",
+                    categories: [],
+                    tags: []
+                }
+            },
+            webPersonalization: {
+                endpoint: 'https://revamp-api.techgadgetforus.com',
+                scope: 'tma-workspace-demo'
+            }
+        };
+        var bimax = false;
+
+        window.dxp || (window.dxp = {});
+        (function () {
+            var queue = [];
+            var methods = [
+                "trackSubmit", "trackClick", "trackLink", "trackForm", "initialize", "pageview", "identify",
+                "reset", "group", "track", "ready", "alias", "debug", "page", "once", "off", "on", "personalize"
+            ];
+            function createMethod(method) {
+                return function () {
+                    var args = Array.prototype.slice.call(arguments);
+                    args.unshift(method);
+                    queue.push(args);
+                    return window.dxp;
+                };
+            }
+            for (var i = 0; i < methods.length; i++) {
+                var method = methods[i];
+                window.dxp[method] = createMethod(method);
+            }
+            function onLoad() {
+                setTimeout(() => {
+                    entity.initialize({ "Apache Unomi": options });
+                    while (queue.length > 0) {
+                        var args = queue.shift();
+                        var methodName = args.shift();
+                        dxp[methodName] && dxp[methodName].apply(dxp, args);
+                    }
+                }, 100);
+            }
+            dxp.load = function () {
+                var script = document.createElement("script");
+                script.type = "text/javascript";
+                script.async = true;
+                script.src = options.url.script + "/public/sdk/dxp-tracker.min.js";
+                if (script.addEventListener) {
+                    script.addEventListener("load", function () { onLoad(); }, false);
+                } else {
+                    script.onreadystatechange = function () {
+                        if (this.readyState === "complete" || this.readyState === "loaded") {
+                            onLoad(window.event);
+                        }
+                    };
+                }
+                var firstScript = document.getElementsByTagName("script")[0];
+                firstScript.parentNode.insertBefore(script, firstScript);
+            };
+            dxp.load();
+            dxp.page(options.initialPageProperties);
+        })();
+
+        function initializeInapp() {
+            return new Promise(function (resolve, reject) {
+                var script = document.createElement('script');
+                script.src = options.webPersonalization.endpoint + "/public/sdk-web-personalization/index.min.js";
+                script.type = "module";
+                script.addEventListener('load', function () {
+                    if (window.dxp && typeof webPersonalization === 'function') {
+                        window.inappInstance = webPersonalization(options.webPersonalization.endpoint, options.webPersonalization.scope);
+                        window.inappInstance.initialize("modalWebP", function () {
+                            console.log('initialized inappInstance on coffee shop');
+                        }).then(function () {
+                            window.inappInstance.setTracker(window.dxp);
+                            window.inappInstance.injectMessageTemplate({ properties: '', value: null }, 4000);
+                        });
+                        resolve();
+                    }
+                });
+                script.addEventListener('error', reject);
+                document.body.appendChild(script);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeInapp()
+                .then(function () {
+                    console.log('Web personalization initialized for Lumina Coffee Shop.');
+                })
+                .catch(function (error) {
+                    console.error('Error initializing web personalization:', error);
+                });
+        });
+    </script>
+</body>
+
+</html>
