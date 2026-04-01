@@ -112,8 +112,29 @@
             });
         }
 
+        function waitForSessionCookie(maxWait = 3000, interval = 100) {
+            return new Promise(function (resolve) {
+                var elapsed = 0;
+                var check = setInterval(function () {
+                    var cookie = document.cookie.split(';').find(function (c) {
+                        return c.trim().startsWith('unomiSessionId=');
+                    });
+                    if (cookie || elapsed >= maxWait) {
+                        clearInterval(check);
+                        resolve(!!cookie);
+                    }
+                    elapsed += interval;
+                }, interval);
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            initializeInapp()
+            waitForSessionCookie().then(function (hasCookie) {
+                if (!hasCookie) {
+                    console.warn('unomiSessionId cookie not found after waiting. Web personalization may not work.');
+                }
+                return initializeInapp();
+            })
                 .then(function () {
                     console.log('Web personalization initialized for Lumina Coffee Shop.');
                 })
