@@ -18,7 +18,7 @@
             scope: "playground",
             url: {
                 api: "https://revamp-unomi.techgadgetforus.com/cxs",
-                script: "https://revamp-api.techgadgetforus.com"
+                script: "http://localhost:3400"
             },
             source: { id: "coffee-shop-demo" },
             initialPageProperties: {
@@ -34,7 +34,7 @@
                 }
             },
             webPersonalization: {
-                endpoint: 'https://revamp-api.techgadgetforus.com',
+                endpoint: 'http://localhost:3400',
                 scope: 'playground'
             }
         };
@@ -61,7 +61,7 @@
             }
             function onLoad() {
                 setTimeout(() => {
-                    entity.initialize({ "Apache Unomi": options });
+                    dxp.initialize({ "Apache Unomi": options });
                     while (queue.length > 0) {
                         var args = queue.shift();
                         var methodName = args.shift();
