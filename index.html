@@ -137,11 +137,62 @@
             })
                 .then(function () {
                     console.log('Web personalization initialized for Lumina Coffee Shop.');
+                    return initializeWebPush();
                 })
                 .catch(function (error) {
-                    console.error('Error initializing web personalization:', error);
+                    console.error('Error initializing:', error);
                 });
         });
+
+        // ── Web Push ────────────────────────────────────────────────
+        // Replace this with the VAPID public key from TMA > Configurations > System Integrations > Web Push
+        var VAPID_PUBLIC_KEY = 'YOUR_VAPID_PUBLIC_KEY_HERE';
+
+        function urlBase64ToUint8Array(base64String) {
+            var padding = '='.repeat((4 - base64String.length % 4) % 4);
+            var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            var rawData = window.atob(base64);
+            var outputArray = new Uint8Array(rawData.length);
+            for (var i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        async function initializeWebPush() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                console.warn('Web Push is not supported in this browser.');
+                return;
+            }
+
+            try {
+                var registration = await navigator.serviceWorker.register('/dxp-worker.js');
+                console.log('Service Worker registered:', registration.scope);
+
+                var permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    console.warn('Notification permission denied.');
+                    return;
+                }
+
+                var subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+                });
+
+                console.log('Web Push subscription:', JSON.stringify(subscription));
+
+                // Send subscription to Unomi via DXP tracker as a PushNotificationAccepted event
+                if (window.dxp && window.dxp.track) {
+                    window.dxp.track('PushNotificationAccepted', {
+                        subscription: subscription.toJSON(),
+                    });
+                    console.log('Web Push subscription sent to Unomi.');
+                }
+            } catch (error) {
+                console.error('Web Push initialization failed:', error);
+            }
+        }
     </script>
 </body>
 
