@@ -12,13 +12,13 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- TMA Solution Web Personalization SDK Injection -->
+    <!-- TMA Solution SDK — Generated from Platform Integration Page -->
     <script type="module">
         var options = {
             scope: "playground",
             url: {
-                api: "https://revamp-unomi.techgadgetforus.com/cxs",
-                script: "https://revamp-api.techgadgetforus.com"
+                api: "https://revamp-unomi.techgadgetforus.com",
+                script: "https://revamp-api.techgadgetforus.com/v1"
             },
             source: { id: "coffee-shop-demo" },
             initialPageProperties: {
@@ -34,7 +34,7 @@
                 }
             },
             webPersonalization: {
-                endpoint: 'https://revamp-api.techgadgetforus.com',
+                endpoint: 'https://revamp-api.techgadgetforus.com/v1',
                 scope: 'playground'
             }
         };
@@ -60,14 +60,7 @@
                 window.dxp[method] = createMethod(method);
             }
             function onLoad() {
-                setTimeout(() => {
-                    dxp.initialize({ "Apache Unomi": options });
-                    while (queue.length > 0) {
-                        var args = queue.shift();
-                        var methodName = args.shift();
-                        dxp[methodName] && dxp[methodName].apply(dxp, args);
-                    }
-                }, 100);
+                waitForSendCookiesId(window.dxp, queue);
             }
             dxp.load = function () {
                 var script = document.createElement("script");
@@ -90,64 +83,7 @@
             dxp.page(options.initialPageProperties);
         })();
 
-        function initializeInapp() {
-            return new Promise(function (resolve, reject) {
-                var script = document.createElement('script');
-                script.src = options.webPersonalization.endpoint + "/public/sdk-web-personalization/index.min.js";
-                script.type = "module";
-                script.addEventListener('load', function () {
-                    if (window.dxp && typeof webPersonalization === 'function') {
-                        window.inappInstance = webPersonalization(options.webPersonalization.endpoint, options.webPersonalization.scope);
-                        window.inappInstance.initialize("modalWebP", function () {
-                            console.log('initialized inappInstance on coffee shop');
-                        }).then(function () {
-                            window.inappInstance.setTracker(window.dxp);
-                            window.inappInstance.injectMessageTemplate({ properties: '', value: null }, 4000);
-                        });
-                        resolve();
-                    }
-                });
-                script.addEventListener('error', reject);
-                document.body.appendChild(script);
-            });
-        }
-
-        function waitForSessionCookie(maxWait = 3000, interval = 100) {
-            return new Promise(function (resolve) {
-                var elapsed = 0;
-                var check = setInterval(function () {
-                    var cookie = document.cookie.split(';').find(function (c) {
-                        return c.trim().startsWith('unomiSessionId=');
-                    });
-                    if (cookie || elapsed >= maxWait) {
-                        clearInterval(check);
-                        resolve(!!cookie);
-                    }
-                    elapsed += interval;
-                }, interval);
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            waitForSessionCookie().then(function (hasCookie) {
-                if (!hasCookie) {
-                    console.warn('unomiSessionId cookie not found after waiting. Web personalization may not work.');
-                }
-                return initializeInapp();
-            })
-                .then(function () {
-                    console.log('Web personalization initialized for Lumina Coffee Shop.');
-                    return initializeWebPush();
-                })
-                .catch(function (error) {
-                    console.error('Error initializing:', error);
-                });
-        });
-
-        // ── Web Push ────────────────────────────────────────────────
-        // Replace this with the VAPID public key from TMA > Configurations > System Integrations > Web Push
-        var VAPID_PUBLIC_KEY = 'YOUR_VAPID_PUBLIC_KEY_HERE';
-
+        // ── Helpers ──────────────────────────────────────────────────
         function urlBase64ToUint8Array(base64String) {
             var padding = '='.repeat((4 - base64String.length % 4) % 4);
             var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -159,39 +95,118 @@
             return outputArray;
         }
 
-        async function initializeWebPush() {
-            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                console.warn('Web Push is not supported in this browser.');
-                return;
+        function arrayBufferToBase64(buffer) {
+            var binary = '';
+            var bytes = new Uint8Array(buffer);
+            var len = bytes.byteLength;
+            for (var i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
             }
+            return btoa(binary);
+        }
 
-            try {
-                var registration = await navigator.serviceWorker.register('/dxp-worker.js');
-                console.log('Service Worker registered:', registration.scope);
-
-                var permission = await Notification.requestPermission();
-                if (permission !== 'granted') {
-                    console.warn('Notification permission denied.');
-                    return;
-                }
-
-                var subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        // ── Web Personalization ─────────────────────────────────────
+        function initializeInapp() {
+            return new Promise(function (resolve, reject) {
+                var script = document.createElement('script');
+                script.src = options.webPersonalization.endpoint + "/public/sdk-web-personalization/index.min.js";
+                script.type = "module";
+                script.addEventListener('load', function () {
+                    if (dxp) {
+                        window.inappInstance = webPersonalization(options.webPersonalization.endpoint, options.webPersonalization.scope);
+                        window.inappInstance.initialize("modalWebP", function () {
+                            console.log('initialized inappInstance');
+                        }).then(function () {
+                            inappInstance.setTracker(dxp);
+                            inappInstance.injectMessageTemplate({ properties: '', value: null }, 4000);
+                        });
+                        resolve();
+                    }
                 });
+                script.addEventListener('error', reject);
+                document.body.appendChild(script);
+            });
+        }
 
-                console.log('Web Push subscription:', JSON.stringify(subscription));
+        initializeInapp().then(function () {
+            console.log('Web personalization initialized.');
+        }).catch(function (error) {
+            console.error('Error initializing web personalization:', error);
+        });
 
-                // Send subscription to Unomi via DXP tracker as a PushNotificationAccepted event
-                if (window.dxp && window.dxp.track) {
-                    window.dxp.track('PushNotificationAccepted', {
-                        subscription: subscription.toJSON(),
+        // ── Web Push ────────────────────────────────────────────────
+        function initWebPush() {
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                console.log('Service Worker and Push is supported');
+                navigator.serviceWorker.register('/dxp-worker.js').then(function (registration) {
+                    console.log('Service Worker registered');
+                    registration.pushManager.getSubscription().then(function (subscription) {
+                        if (subscription === null) {
+                            Notification.requestPermission().then(function (permission) {
+                                if (permission === 'granted') {
+                                    registration.pushManager.subscribe({
+                                        userVisibleOnly: true,
+                                        applicationServerKey: urlBase64ToUint8Array("BA1AGMZH1dlMYfWMw-3eO4NO4Yq_cNL-OzA8kP3xvr1IR-Nwcd5NrdbM-U-MOorkSRsH3i7VjricbCskphkfkHg")
+                                    }).then(function (subscription) {
+                                        var subscriptionData = {
+                                            endpoint: subscription.endpoint,
+                                            expirationTime: subscription.expirationTime,
+                                            keys: {
+                                                p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
+                                                auth: arrayBufferToBase64(subscription.getKey('auth'))
+                                            }
+                                        };
+                                        window.dxp.track("PushNotificationAccepted", { subscription: subscriptionData, isAllowed: true });
+                                    }).catch(function (error) {
+                                        console.error('Unable to subscribe to push', error);
+                                    });
+                                } else {
+                                    window.dxp.track("PushNotificationRejected", { isAllowed: false });
+                                }
+                            });
+                        } else {
+                            console.log('Already subscribed to push notifications');
+                            var subscriptionData = {
+                                endpoint: subscription.endpoint,
+                                expirationTime: subscription.expirationTime,
+                                keys: {
+                                    p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
+                                    auth: arrayBufferToBase64(subscription.getKey('auth'))
+                                }
+                            };
+                            window.dxp.track("PushNotificationAccepted", { subscription: subscriptionData, isAllowed: true });
+                        }
                     });
-                    console.log('Web Push subscription sent to Unomi.');
-                }
-            } catch (error) {
-                console.error('Web Push initialization failed:', error);
+                }).catch(function (error) {
+                    console.error('Service Worker registration failed:', error);
+                });
+            } else {
+                console.warn('Push messaging is not supported');
             }
+        }
+
+        initWebPush();
+
+        // ── SDK Initialization (waits for sendCookiesId from tracker) ──
+        function waitForSendCookiesId(entity, queue) {
+            const interval = setInterval(async () => {
+                if (typeof sendCookiesId === 'function') {
+                    try {
+                        entity.addSourceMiddleware(sendCookiesId);
+                        console.log('sendCookiesId has been successfully executed.');
+                    } catch (err) {
+                        console.error('Error executing sendCookiesId:', err);
+                    } finally {
+                        clearInterval(interval);
+                        entity.initialize({ "Apache Unomi": options });
+                        while (queue.length > 0) {
+                            var args = queue.shift();
+                            var methodName = args.shift();
+                            dxp[methodName] && dxp[methodName].apply(dxp, args);
+                        }
+                    }
+                }
+            }, 0);
         }
     </script>
 </body>
