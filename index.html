@@ -128,11 +128,35 @@
             });
         }
 
-        initializeInapp().then(function () {
-            console.log('Web personalization initialized.');
-        }).catch(function (error) {
-            console.error('Error initializing web personalization:', error);
-        });
+        // Wait for unomiSessionId cookie before initializing web personalization
+        function waitForSessionThenInit(maxWait = 5000, interval = 200) {
+            var elapsed = 0;
+            var check = setInterval(function () {
+                var hasCookie = document.cookie.split(';').some(function (c) {
+                    return c.trim().startsWith('unomiSessionId=');
+                });
+                if (hasCookie) {
+                    clearInterval(check);
+                    console.log('WEB-PUSH => unomiSessionId cookie detected, initializing web personalization...');
+                    initializeInapp().then(function () {
+                        console.log('Web personalization initialized.');
+                    }).catch(function (error) {
+                        console.error('Error initializing web personalization:', error);
+                    });
+                } else if (elapsed >= maxWait) {
+                    clearInterval(check);
+                    console.warn('WEB-PUSH => Timed out waiting for unomiSessionId cookie (' + maxWait + 'ms). Initializing anyway...');
+                    initializeInapp().then(function () {
+                        console.log('Web personalization initialized (without session).');
+                    }).catch(function (error) {
+                        console.error('Error initializing web personalization:', error);
+                    });
+                }
+                elapsed += interval;
+            }, interval);
+        }
+
+        waitForSessionThenInit();
 
         // ── Web Push ────────────────────────────────────────────────
         function initWebPush() {
