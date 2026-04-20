@@ -137,12 +137,14 @@
         // ── Web Push ────────────────────────────────────────────────
         function initWebPush() {
             if ('serviceWorker' in navigator && 'PushManager' in window) {
-                console.log('Service Worker and Push is supported');
+                console.log('WEB-PUSH => Service Worker and Push is supported');
                 navigator.serviceWorker.register('/dxp-worker.js').then(function (registration) {
-                    console.log('Service Worker registered');
+                    console.log('WEB-PUSH => Service Worker registered, scope:', registration.scope);
                     registration.pushManager.getSubscription().then(function (subscription) {
                         if (subscription === null) {
+                            console.log('WEB-PUSH => No existing subscription, requesting permission...');
                             Notification.requestPermission().then(function (permission) {
+                                console.log('WEB-PUSH => Permission result:', permission);
                                 if (permission === 'granted') {
                                     registration.pushManager.subscribe({
                                         userVisibleOnly: true,
@@ -165,7 +167,7 @@
                                 }
                             });
                         } else {
-                            console.log('Already subscribed to push notifications');
+                            console.log('WEB-PUSH => Already subscribed, endpoint:', subscription.endpoint.substring(0, 60) + '...');
                             var subscriptionData = {
                                 endpoint: subscription.endpoint,
                                 expirationTime: subscription.expirationTime,
@@ -175,13 +177,14 @@
                                 }
                             };
                             window.dxp.track("PushNotificationAccepted", { subscription: subscriptionData, isAllowed: true });
+                            console.log('WEB-PUSH => Re-sent subscription to Unomi via dxp.track');
                         }
                     });
                 }).catch(function (error) {
-                    console.error('Service Worker registration failed:', error);
+                    console.error('WEB-PUSH => Service Worker registration failed:', error);
                 });
             } else {
-                console.warn('Push messaging is not supported');
+                console.warn('WEB-PUSH => Push messaging is not supported');
             }
         }
 

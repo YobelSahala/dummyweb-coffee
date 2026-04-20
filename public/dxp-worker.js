@@ -12,13 +12,17 @@ self.addEventListener('push', (e) => {
     (async () => {
       try {
         const data = e.data.json();
+        console.log('WEB-PUSH => push event received, raw data:', JSON.stringify(data));
+
         if (!data || !data.title) {
+          console.log('WEB-PUSH => no title in payload, showing fallback');
           self.registration.showNotification('Notification', { body: 'You have a new message.' });
           return;
         }
 
         var notifAction = [];
         var actionButtons = data.actionButtons || [];
+        console.log('WEB-PUSH => actionButtons:', JSON.stringify(actionButtons));
 
         if (actionButtons.length > 0) {
           actionButtons.map((item, index) => {
@@ -46,9 +50,10 @@ self.addEventListener('push', (e) => {
           options.image = data.image;
         }
 
+        console.log('WEB-PUSH => showNotification title:', data.title, 'options:', JSON.stringify(options));
         await self.registration.showNotification(data.title, options);
       } catch (err) {
-        console.error('Push handler error:', err);
+        console.error('WEB-PUSH => push handler error:', err);
         self.registration.showNotification('Notification', { body: 'You have a new message.' });
       }
     })()
