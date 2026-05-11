@@ -13,229 +13,268 @@
     <script type="module" src="/src/main.tsx"></script>
 
     <!-- TMA Solution SDK — Generated from Platform Integration Page -->
+    
     <script type="module">
-        var options = {
-            scope: "playground",
-            url: {
-                api: "https://revamp-unomi.techgadgetforus.com",
-                script: "https://revamp-api.techgadgetforus.com"
-            },
-            source: { id: "coffee-shop-demo" },
-            initialPageProperties: {
-                path: location.pathname + location.hash,
-                pageInfo: {
-                    pageID: "index",
-                    pageName: document.title,
-                    pagePath: document.location.pathname,
-                    destinationURL: document.location.origin + document.location.pathname,
-                    language: "en",
-                    categories: [],
-                    tags: []
-                }
-            },
-            webPersonalization: {
-                endpoint: 'https://revamp-api.techgadgetforus.com',
-                scope: 'playground'
+    var options={scope:"playground",url:{api:"https://revamp-unomi.techgadgetforus.com",script:"https://revamp-api.techgadgetforus.com/v1"},source:{id:"website"},initialPageProperties:{path:location.pathname+location.hash,pageInfo:{pageID:"index",pageName:document.title,pagePath:document.location.pathname,destinationURL:document.location.origin+document.location.pathname,language:"en",categories:[],tags:[]}},webPersonalization:{endpoint:'https://revamp-api.techgadgetforus.com/v1',scope:'playground'}};var bimax=false
+    window.dxp || (window.dxp = {});
+    (function () {
+        var queue = [];
+        var methods = [
+            "trackSubmit", "trackClick", "trackLink", "trackForm", "initialize", "pageview", "identify",
+            "reset", "group", "track", "ready", "alias", "debug", "page", "once", "off", "on", "personalize"
+        ];
+        function createMethod(method) {
+            return function () {
+                var args = Array.prototype.slice.call(arguments);
+                args.unshift(method);
+                queue.push(args);
+                return window.dxp;
+            };
+        }
+        for (var i = 0; i < methods.length; i++) {
+            var method = methods[i];
+            window.dxp[method] = createMethod(method);
+        }
+        function onLoad() {
+            waitForSendCookiesId(window.dxp, queue)
+        }
+        dxp.load = function () {
+            var script = document.createElement("script");
+            if (bimax) {
+                var bimaxElement = document.createElement("script");
+                bimaxElement.type = "text/javascript";
+                bimaxElement.async = true;
+                bimaxElement.src = options.url.script + "/public/sdk/bimax-tracker.js";
+                bimaxElement.addEventListener("load", function () {
+                    console.log('bimax script has been loaded');
+                }, false);
+                console.log('bimax', bimaxElement)
             }
-        };
-        var bimax = false;
-
-        window.dxp || (window.dxp = {});
-        (function () {
-            var queue = [];
-            var methods = [
-                "trackSubmit", "trackClick", "trackLink", "trackForm", "initialize", "pageview", "identify",
-                "reset", "group", "track", "ready", "alias", "debug", "page", "once", "off", "on", "personalize"
-            ];
-            function createMethod(method) {
-                return function () {
-                    var args = Array.prototype.slice.call(arguments);
-                    args.unshift(method);
-                    queue.push(args);
-                    return window.dxp;
+            script.type = "text/javascript";
+            script.async = true;
+            script.src = options.url.script + "/public/sdk/dxp-tracker.min.js";
+            if (script.addEventListener) {
+                script.addEventListener("load", function () { onLoad(); }, false);
+            } else {
+                script.onreadystatechange = function () {
+                    if (this.readyState === "complete" || this.readyState === "loaded") {
+                        onLoad(window.event);
+                    }
                 };
             }
-            for (var i = 0; i < methods.length; i++) {
-                var method = methods[i];
-                window.dxp[method] = createMethod(method);
+            var firstScript = document.getElementsByTagName("script")[0];
+            if (bimax) {
+                firstScript.parentNode.insertBefore(bimaxElement, firstScript);
             }
-            function onLoad() {
-                waitForSendCookiesId(window.dxp, queue);
-            }
-            dxp.load = function () {
-                var script = document.createElement("script");
-                script.type = "text/javascript";
-                script.async = true;
-                script.src = options.url.script + "/public/sdk/dxp-tracker.min.js";
-                if (script.addEventListener) {
-                    script.addEventListener("load", function () { onLoad(); }, false);
-                } else {
-                    script.onreadystatechange = function () {
-                        if (this.readyState === "complete" || this.readyState === "loaded") {
-                            onLoad(window.event);
-                        }
-                    };
-                }
-                var firstScript = document.getElementsByTagName("script")[0];
-                firstScript.parentNode.insertBefore(script, firstScript);
-            };
-            dxp.load();
-            dxp.page(options.initialPageProperties);
-        })();
-
-        // ── Helpers ──────────────────────────────────────────────────
-        function urlBase64ToUint8Array(base64String) {
-            var padding = '='.repeat((4 - base64String.length % 4) % 4);
-            var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-            var rawData = window.atob(base64);
-            var outputArray = new Uint8Array(rawData.length);
-            for (var i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
-        }
-
-        function arrayBufferToBase64(buffer) {
-            var binary = '';
-            var bytes = new Uint8Array(buffer);
-            var len = bytes.byteLength;
-            for (var i = 0; i < len; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return btoa(binary);
-        }
-
-        // ── Web Personalization ─────────────────────────────────────
-        function initializeInapp() {
-            return new Promise(function (resolve, reject) {
-                var script = document.createElement('script');
-                script.src = options.webPersonalization.endpoint + "/public/sdk-web-personalization/index.min.js";
-                script.type = "module";
-                script.addEventListener('load', function () {
-                    if (dxp) {
-                        window.inappInstance = webPersonalization(options.webPersonalization.endpoint, options.webPersonalization.scope);
-                        window.inappInstance.initialize("modalWebP", function () {
-                            console.log('initialized inappInstance');
-                        }).then(function () {
-                            inappInstance.setTracker(dxp);
-                            inappInstance.injectMessageTemplate({ properties: '', value: null }, 4000);
-                        });
-                        resolve();
-                    }
-                });
-                script.addEventListener('error', reject);
-                document.body.appendChild(script);
+            firstScript.parentNode.insertBefore(script, firstScript);
+        };
+        dxp.load();
+        dxp.page(options.initialPageProperties);
+    })();
+    var tracker = {
+        onCustomEvent: function (eventName, object) {
+            dxp.track(eventName, object);
+        },
+        onClick: function (eventName, object) {
+            dxp.trackClick(eventName, object);
+        },
+        onLink: function (links, event, properties) {
+            dxp.trackLink(links, event, properties);
+        },
+        onFormSubmit: function (formId, eventName, object) {
+            window.addEventListener("load", function () {
+                var form = document.getElementById(formId);
+                console.log("form submit", form);
+                dxp.trackForm(form, eventName, { formName: form.name });
             });
+        },
+        onInitialize: function (options) {
+            dxp.initialize(options);
+        },
+        onInitPage: function (options) {
+            dxp.page(options);
+        },
+        onPageView: function (options) {
+            dxp.pageview(options);
+        },
+        onIdentify: function (eventName, object) {
+            dxp.identify(eventName, object);
         }
-
-        // Wait for unomiSessionId cookie before initializing web personalization
-        function waitForSessionThenInit(maxWait = 5000, interval = 200) {
-            var elapsed = 0;
-            var check = setInterval(function () {
-                var hasCookie = document.cookie.split(';').some(function (c) {
-                    return c.trim().startsWith('unomiSessionId=');
-                });
-                if (hasCookie) {
-                    clearInterval(check);
-                    console.log('WEB-PUSH => unomiSessionId cookie detected, initializing web personalization...');
-                    initializeInapp().then(function () {
-                        console.log('Web personalization initialized.');
-                    }).catch(function (error) {
-                        console.error('Error initializing web personalization:', error);
-                    });
-                } else if (elapsed >= maxWait) {
-                    clearInterval(check);
-                    console.warn('WEB-PUSH => Timed out waiting for unomiSessionId cookie (' + maxWait + 'ms). Initializing anyway...');
-                    initializeInapp().then(function () {
-                        console.log('Web personalization initialized (without session).');
-                    }).catch(function (error) {
-                        console.error('Error initializing web personalization:', error);
-                    });
-                }
-                elapsed += interval;
-            }, interval);
-        }
-
-        waitForSessionThenInit();
-
-        // ── Web Push ────────────────────────────────────────────────
-        function initWebPush() {
-            if ('serviceWorker' in navigator && 'PushManager' in window) {
-                console.log('WEB-PUSH => Service Worker and Push is supported');
-                navigator.serviceWorker.register('/dxp-worker.js').then(function (registration) {
-                    console.log('WEB-PUSH => Service Worker registered, scope:', registration.scope);
-                    registration.pushManager.getSubscription().then(function (subscription) {
-                        if (subscription === null) {
-                            console.log('WEB-PUSH => No existing subscription, requesting permission...');
-                            Notification.requestPermission().then(function (permission) {
-                                console.log('WEB-PUSH => Permission result:', permission);
-                                if (permission === 'granted') {
-                                    registration.pushManager.subscribe({
-                                        userVisibleOnly: true,
-                                        applicationServerKey: urlBase64ToUint8Array("BA1AGMZH1dlMYfWMw-3eO4NO4Yq_cNL-OzA8kP3xvr1IR-Nwcd5NrdbM-U-MOorkSRsH3i7VjricbCskphkfkHg")
-                                    }).then(function (subscription) {
-                                        var subscriptionData = {
-                                            endpoint: subscription.endpoint,
-                                            expirationTime: subscription.expirationTime,
-                                            keys: {
-                                                p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
-                                                auth: arrayBufferToBase64(subscription.getKey('auth'))
-                                            }
-                                        };
-                                        window.dxp.track("PushNotificationAccepted", { subscription: subscriptionData, isAllowed: true });
-                                    }).catch(function (error) {
-                                        console.error('Unable to subscribe to push', error);
-                                    });
-                                } else {
-                                    window.dxp.track("PushNotificationRejected", { isAllowed: false });
-                                }
-                            });
-                        } else {
-                            console.log('WEB-PUSH => Already subscribed, endpoint:', subscription.endpoint.substring(0, 60) + '...');
-                            var subscriptionData = {
-                                endpoint: subscription.endpoint,
-                                expirationTime: subscription.expirationTime,
-                                keys: {
-                                    p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
-                                    auth: arrayBufferToBase64(subscription.getKey('auth'))
-                                }
-                            };
-                            window.dxp.track("PushNotificationAccepted", { subscription: subscriptionData, isAllowed: true });
-                            console.log('WEB-PUSH => Re-sent subscription to Unomi via dxp.track');
-                        }
-                    });
-                }).catch(function (error) {
-                    console.error('WEB-PUSH => Service Worker registration failed:', error);
-                });
-            } else {
-                console.warn('WEB-PUSH => Push messaging is not supported');
+    };
+    function getUnomiUserId() {
+        var cookies = document.cookie.split(";");
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.startsWith("ajs_user_id=")) {
+                var value = cookie.substring("ajs_user_id=".length);
+                return decodeURIComponent(value);
             }
         }
-
-        initWebPush();
-
-        // ── SDK Initialization (waits for sendCookiesId from tracker) ──
-        function waitForSendCookiesId(entity, queue) {
-            const interval = setInterval(async () => {
-                if (typeof sendCookiesId === 'function') {
-                    try {
-                        entity.addSourceMiddleware(sendCookiesId);
-                        console.log('sendCookiesId has been successfully executed.');
-                    } catch (err) {
-                        console.error('Error executing sendCookiesId:', err);
-                    } finally {
-                        clearInterval(interval);
-                        entity.initialize({ "Apache Unomi": options });
-                        while (queue.length > 0) {
-                            var args = queue.shift();
-                            var methodName = args.shift();
-                            dxp[methodName] && dxp[methodName].apply(dxp, args);
+        return null;
+    }
+    function urlBase64ToUint8Array(base64String) {
+        var padding = '='.repeat((4 - base64String.length % 4) % 4);
+        var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        var rawData = window.atob(base64);
+        var outputArray = new Uint8Array(rawData.length);
+        for (var i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+    function arrayBufferToBase64(buffer) {
+        var binary = '';
+        var bytes = new Uint8Array(buffer);
+        var len = bytes.byteLength;
+        for (var i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    }
+    function initializeInapp() {
+        return new Promise(function (resolve, reject) {
+            var script = document.createElement('script');
+            script.src = options.webPersonalization.endpoint + "/public/sdk-web-personalization/index.min.js";
+            script.type = "module";
+            script.addEventListener('load', function () {
+                if (dxp) {
+                    window.inappInstance = webPersonalization(options.webPersonalization.endpoint, options.webPersonalization.scope);
+                    window.inappInstance.initialize("modalWebP", function () {
+                        console.log('initialized inappInstance');
+                    }).then(function () {
+                        inappInstance.setTracker(dxp);
+                        inappInstance.injectMessageTemplate({ properties: '', value: null }, 4000);
+                    });
+                    resolve();
+                }
+            });
+            script.addEventListener('error', reject);
+            document.body.appendChild(script);
+        });
+    }
+    initializeInapp()
+        .then(function () {
+            console.log('Web personalization initialized.');
+        })
+        .catch(function (error) {
+            console.error('Error initializing web personalization:', error);
+        });
+    function initWebPush() {
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            console.log('Service Worker and Push is supported');
+            navigator.serviceWorker.register('/service-worker.js').then(function (registration) {
+                console.log('Service Worker registered');
+                registration.pushManager.getSubscription().then(function (subscription) {
+                    if (subscription === null && window.dxp != {}) {
+                        console.log('subscription', subscription)
+                        Notification.requestPermission().then(function (permission) {
+                            if (permission === 'granted') {
+                                registration.pushManager.subscribe({
+                                    userVisibleOnly: true,
+                                    applicationServerKey: urlBase64ToUint8Array("BA1AGMZH1dlMYfWMw-3eO4NO4Yq_cNL-OzA8kP3xvr1IR-Nwcd5NrdbM-U-MOorkSRsH3i7VjricbCskphkfkHg")
+                                }).then(function (subscription) {
+                                    var subscriptionData = {
+                                        endpoint: subscription.endpoint,
+                                        expirationTime: subscription.expirationTime,
+                                        keys: {
+                                            p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
+                                            auth: arrayBufferToBase64(subscription.getKey('auth'))
+                                        }
+                                    };
+                                    window.dxp.track("PushNotificationAccepted", { subscription: subscriptionData, isAllowed: true });
+                                }).catch(function (error) {
+                                    console.error('Unable to subscribe to push', error);
+                                });
+                            } else {
+                                window.dxp.track("PushNotificationRejected", { isAllowed: false });
+                            }
+                        });
+                    } else {
+                        console.log('Already subscribed to push notifications:', subscription);
+                        var subscriptionData = {
+                            endpoint: subscription.endpoint,
+                            expirationTime: subscription.expirationTime,
+                            keys: {
+                                p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
+                                auth: arrayBufferToBase64(subscription.getKey('auth'))
+                            }
+                        };
+                        if ('serviceWorker' in navigator && 'PushManager' in window) {
+                            navigator.serviceWorker.ready.then(function (registration) {
+                                registration.pushManager.getSubscription().then(function (subscription) {
+                                    if (subscription !== null) {
+                                        const bellIcon = document.createElement('div');
+                                        bellIcon.innerHTML = '&#128276;';
+                                        bellIcon.style.position = 'fixed';
+                                        bellIcon.style.top = '10px';
+                                        bellIcon.style.left = '10px';
+                                        bellIcon.style.zIndex = '1000';
+                                        bellIcon.style.fontSize = '10px';
+                                        bellIcon.style.cursor = 'pointer';
+                                        bellIcon.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
+                                        bellIcon.style.color = '#fff';
+                                        bellIcon.style.borderRadius = '50%';
+                                        bellIcon.style.padding = '10px';
+                                        bellIcon.style.display = 'flex';
+                                        bellIcon.style.alignItems = 'center';
+                                        bellIcon.style.justifyContent = 'center';
+                                        bellIcon.addEventListener('click', function () {
+                                            subscription.unsubscribe().then(function () {
+                                                console.log('Unsubscribed from push notifications');
+                                                window.dxp.track("PushNotificationUnsubscribed", { isAllowed: false });
+                                                bellIcon.remove();
+                                            }).catch(function (error) {
+                                                console.error('Failed to unsubscribe', error);
+                                            });
+                                        });
+                                        document.body.appendChild(bellIcon);
+                                    }
+                                });
+                            });
                         }
+                        new Promise((resolve, reject) => {
+                            try {
+                                const result = window.dxp.track("PushNotificationAccepted", { subscription: subscriptionData, isAllowed: true });
+                                if (result) {
+                                    resolve(result)
+                                }
+                            } catch (error) {
+                                console.error('failed to send', error)
+                                reject(error)
+                            }
+                        })
+                    }
+                });
+            }).catch(function (error) {
+                console.error('Service Worker registration failed:', error);
+            });
+        } else {
+            console.warn('Push messaging is not supported');
+        }
+    }
+    initWebPush()
+    function waitForSendCookiesId(entity, queue) {
+        const interval = setInterval(async () => {
+            if (typeof sendCookiesId === 'function') {
+                try {
+                    entity.addSourceMiddleware(sendCookiesId)
+                    console.log('sendCookiesId has been successfully executed.');
+                } catch (err) {
+                    console.error('Error executing sendCookiesId:', err);
+                } finally {
+                    clearInterval(interval);
+                    entity.initialize({ "Apache Unomi": options });
+                    while (queue.length > 0) {
+                        var args = queue.shift();
+                        var methodName = args.shift();
+                        dxp[methodName] && dxp[methodName].apply(dxp, args);
                     }
                 }
-            }, 0);
-        }
+            }
+        }, 0);
+    }
     </script>
+    
 </body>
 
 </html>
